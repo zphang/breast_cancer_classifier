@@ -10,6 +10,7 @@ IMAGE_MODEL_PATH='models/ImageOnly__ModeImage_weights.p'
 IMAGEHEATMAPS_MODEL_PATH='models/ImageHeatmaps__ModeImage_weights.p'
 
 SAMPLE_SINGLE_OUTPUT_PATH='sample_single_output'
+export PYTHONPATH=$(pwd):$PYTHONPATH
 
 
 echo 'Stage 1: Crop Mammograms'
@@ -21,8 +22,8 @@ python3 src/cropping/crop_single.py \
 
 echo 'Stage 2: Extract Centers'
 python3 src/optimal_centers/get_optimal_center_single.py \
-    --cropped-mammogram-path sample_single_output/cropped.png \
-    --metadata-path sample_single_output/cropped_metadata.pkl
+    --cropped-mammogram-path ${SAMPLE_SINGLE_OUTPUT_PATH}/cropped.png \
+    --metadata-path ${SAMPLE_SINGLE_OUTPUT_PATH}/cropped_metadata.pkl
 
 echo 'Stage 3: Generate Heatmaps'
 python3 src/heatmaps/run_producer_single.py \
