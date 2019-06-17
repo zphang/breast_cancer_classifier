@@ -66,6 +66,12 @@ class LABELS:
     LIST = [LEFT_BENIGN, RIGHT_BENIGN, LEFT_MALIGNANT, RIGHT_MALIGNANT]
 
 
+class MODELMODES:
+    VIEW_SPLIT = "view_split"
+    IMAGE = "image"
+    IMAGE_QUAD_SINGLE = "image_quad_single"
+
+
 INPUT_SIZE_DICT = {
     VIEWS.L_CC: (2677, 1942),
     VIEWS.R_CC: (2677, 1942),

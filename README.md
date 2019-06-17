@@ -30,6 +30,8 @@ This repository is licensed under the terms of the GNU AGPLv3 license.
 
 ## How to run the code
 
+### Exam-level
+
 `run.sh` will automatically run the entire pipeline and save the prediction results in csv. 
 
 We recommend running the code with a gpu (set by default). To run the code with cpu only, please change `DEVICE_TYPE` in `run.sh` to 'cpu'.  
@@ -56,6 +58,30 @@ Predictions using *image-and-heatmaps* model (found in `sample_output/imageheatm
 | 1     | 0.0507       | 0.8025       | 0.0009         | 0.9000          |
 | 2     | 0.2877       | 0.2286       | 0.2524         | 0.0461          |
 | 3     | 0.4181       | 0.3172       | 0.3174         | 0.0485          |
+
+### Image-level
+
+**Update (2019/05/15)**: We have included the *image-wise* model as described in the paper that generates predictions based on a single mammogram image. This model slightly under-performs the *view-wise* model used above, but can be used on single mammogram images as opposed to full exams.
+
+To use the *image-wise* model, run a command such as the following:
+
+```bash
+source run_single.sh "sample_data/images/0_L_CC.png" "L-CC"
+``` 
+
+where the first argument is path to a mammogram image, and the second argument is the view corresponding to that image.
+
+You should obtain the following output based on the above example command:
+
+```
+Stage 1: Crop Mammograms
+Stage 2: Extract Centers
+Stage 3: Generate Heatmaps
+Stage 4a: Run Classifier (Image)
+{"benign": 0.040191903710365295, "malignant": 0.008045293390750885}
+Stage 4b: Run Classifier (Image+Heatmaps)
+{"benign": 0.052365876734256744, "malignant": 0.005510155577212572}
+```
 
 
 ## Data
