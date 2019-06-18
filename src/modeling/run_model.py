@@ -38,18 +38,29 @@ import src.data_loading.loading as loading
 from src.constants import VIEWS, VIEWANGLES, LABELS, MODELMODES
 
 
-def run_model(model, exam_list, parameters):
-    """
-    Returns predictions of image only model or image+heatmaps model.
-    Prediction for each exam is averaged for a given number of epochs.
-    """
+def load_model(parameters):
+    input_channels = 3 if parameters["use_heatmaps"] else 1
+    model_class = {
+        MODELMODES.VIEW_SPLIT: models.SplitBreastModel,
+        MODELMODES.IMAGE: models.ImageBreastModel,
+    }[parameters["model_mode"]]
+    model = model_class(input_channels)
+    model.load_state_dict(torch.load(parameters["model_path"])["model"])
+
     if (parameters["device_type"] == "gpu") and torch.has_cudnn:
         device = torch.device("cuda:{}".format(parameters["gpu_number"]))
     else:
         device = torch.device("cpu")
     model = model.to(device)
     model.eval()
+    return model, device
 
+
+def run_model(model, device, exam_list, parameters):
+    """
+    Returns predictions of image only model or image+heatmaps model.
+    Prediction for each exam is averaged for a given number of epochs.
+    """
     random_number_generator = np.random.RandomState(parameters["seed"])
 
     image_extension = ".hdf5" if parameters["use_hdf5"] else ".png"
@@ -142,11 +153,11 @@ def compute_batch_predictions(y_hat, mode):
             (k, np.exp(v.cpu().detach().numpy()))
             for k, v in batch_prediction_tensor_dict.items()
         ])
-    elif mode == MODELMODES.IMAGE_QUAD_SINGLE or mode == MODELMODES.IMAGE:
-        assert y_hat[VIEWS.L_CC].shape == (1, 4, 2)
-        assert y_hat[VIEWS.R_CC].shape == (1, 4, 2)
-        assert y_hat[VIEWS.L_MLO].shape == (1, 4, 2)
-        assert y_hat[VIEWS.R_MLO].shape == (1, 4, 2)
+    elif mode == MODELMODES.IMAGE:
+        assert y_hat[VIEWS.L_CC].shape == (1, 2, 2)
+        assert y_hat[VIEWS.R_CC].shape == (1, 2, 2)
+        assert y_hat[VIEWS.L_MLO].shape == (1, 2, 2)
+        assert y_hat[VIEWS.R_MLO].shape == (1, 2, 2)
         batch_prediction_tensor_dict = col.OrderedDict()
         batch_prediction_tensor_dict[LABELS.LEFT_BENIGN, VIEWS.L_CC] = y_hat[VIEWS.L_CC][:, 0]
         batch_prediction_tensor_dict[LABELS.LEFT_BENIGN, VIEWS.L_MLO] = y_hat[VIEWS.L_MLO][:, 0]
@@ -166,20 +177,13 @@ def compute_batch_predictions(y_hat, mode):
     return batch_prediction_dict
 
 
-def load_run_save(model_path, data_path, output_path, parameters):
+def load_run_save(data_path, output_path, parameters):
     """
     Outputs the predictions as csv file
     """
-    input_channels = 3 if parameters["use_heatmaps"] else 1
-    model_class = {
-        MODELMODES.VIEW_SPLIT: models.SplitBreastModel,
-        MODELMODES.IMAGE: models.ImageBreastModel,
-        MODELMODES.IMAGE_QUAD_SINGLE: models.SingleImageBreastModel,
-    }[parameters["model_mode"]]
-    model = model_class(input_channels)
-    model.load_state_dict(torch.load(model_path)["model"])
     exam_list = pickling.unpickle_from_file(data_path)
-    predictions = run_model(model, exam_list, parameters)
+    model, device = load_model(parameters)
+    predictions = run_model(model, device, exam_list, parameters)
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     # Take the positive prediction
     df = pd.DataFrame(predictions, columns=LABELS.LIST)
@@ -218,9 +222,9 @@ def main():
         "heatmaps_path": args.heatmaps_path,
         "use_hdf5": args.use_hdf5,
         "model_mode": args.model_mode,
+        "model_path": args.model_path,
     }
     load_run_save(
-        model_path=args.model_path,
         data_path=args.data_path,
         output_path=args.output_path,
         parameters=parameters,

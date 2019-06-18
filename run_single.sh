@@ -38,6 +38,7 @@ python3 src/heatmaps/run_producer_single.py \
 
 echo 'Stage 4a: Run Classifier (Image)'
 python3 src/modeling/run_model_single.py \
+    --view $2 \
     --model-path ${IMAGE_MODEL_PATH} \
     --cropped-mammogram-path sample_single_output/cropped.png \
     --metadata-path sample_single_output/cropped_metadata.pkl \
@@ -48,6 +49,7 @@ python3 src/modeling/run_model_single.py \
 
 echo 'Stage 4b: Run Classifier (Image+Heatmaps)'
 python3 src/modeling/run_model_single.py \
+    --view $2 \
     --model-path ${IMAGEHEATMAPS_MODEL_PATH} \
     --cropped-mammogram-path ${SAMPLE_SINGLE_OUTPUT_PATH}/cropped.png \
     --metadata-path ${SAMPLE_SINGLE_OUTPUT_PATH}/cropped_metadata.pkl \

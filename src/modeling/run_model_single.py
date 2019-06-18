@@ -24,23 +24,87 @@
 Runs the image only model and image+heatmaps model for breast cancer prediction.
 """
 import argparse
-import collections as col
 import numpy as np
-import os
-import pandas as pd
 import torch
 import json
-import tqdm
 
 import src.utilities.pickling as pickling
 import src.utilities.tools as tools
 import src.modeling.models as models
 import src.data_loading.loading as loading
-from src.constants import VIEWS, VIEWANGLES, LABELS, MODELMODES
 
 
-def load_model():
-    pass
+class ModelInput:
+    def __init__(self, image, heatmaps, metadata):
+        self.image = image
+        self.heatmaps = heatmaps
+        self.metadata = metadata
+
+
+def load_model(parameters):
+    input_channels = 3 if parameters["use_heatmaps"] else 1
+    model = models.SingleImageBreastModel(input_channels)
+    model.load_state_from_shared_weights(
+        state_dict=torch.load(parameters["model_path"])["model"],
+        view=parameters["view"],
+    )
+    if (parameters["device_type"] == "gpu") and torch.has_cudnn:
+        device = torch.device("cuda:{}".format(parameters["gpu_number"]))
+    else:
+        device = torch.device("cpu")
+    model = model.to(device)
+    model.eval()
+    return model, device
+
+
+def load_inputs(image_path, metadata_path,
+                use_heatmaps, benign_heatmap_path=None, malignant_heatmap_path=None):
+    if use_heatmaps:
+        assert benign_heatmap_path is not None
+        assert malignant_heatmap_path is not None
+    else:
+        assert benign_heatmap_path is None
+        assert malignant_heatmap_path is None
+    metadata = pickling.unpickle_from_file(metadata_path)
+    image = loading.load_image(
+        image_path=image_path,
+        view=metadata["full_view"],
+        horizontal_flip=metadata["horizontal_flip"],
+    )
+    if use_heatmaps:
+        heatmaps = loading.load_heatmaps(
+            benign_heatmap_path=benign_heatmap_path,
+            malignant_heatmap_path=malignant_heatmap_path,
+            view=metadata["full_view"],
+            horizontal_flip=metadata["horizontal_flip"],
+        )
+    else:
+        heatmaps = None
+    return ModelInput(image=image, heatmaps=heatmaps, metadata=metadata)
+
+
+def process_augment_inputs(model_input, random_number_generator, parameters):
+    cropped_image, cropped_heatmaps = loading.augment_and_normalize_image(
+        image=model_input.image,
+        auxiliary_image=model_input.heatmaps,
+        view=model_input.metadata["full_view"],
+        best_center=model_input.metadata["best_center"],
+        random_number_generator=random_number_generator,
+        augmentation=parameters["augmentation"],
+        max_crop_noise=parameters["max_crop_noise"],
+        max_crop_size_noise=parameters["max_crop_size_noise"],
+    )
+    if parameters["use_heatmaps"]:
+        return np.concatenate([
+            cropped_image[:, :, np.newaxis],
+            cropped_heatmaps,
+        ], axis=2)
+    else:
+        return cropped_image[:, :, np.newaxis]
+
+
+def batch_to_tensor(batch, device):
+    return torch.tensor(np.stack(batch)).permute(0, 3, 1, 2).to(device)
 
 
 def run(parameters):
@@ -48,69 +112,41 @@ def run(parameters):
     Outputs the predictions as csv file
     """
     random_number_generator = np.random.RandomState(parameters["seed"])
-    input_channels = 3 if parameters["use_heatmaps"] else 1
-    model = models.SingleImageBreastModel(input_channels)
-    model.load_state_dict(torch.load(parameters["model_path"])["model"])
+    model, device = load_model(parameters)
 
-    if (parameters["device_type"] == "gpu") and torch.has_cudnn:
-        device = torch.device("cuda:{}".format(parameters["gpu_number"]))
-    else:
-        device = torch.device("cpu")
-    model = model.to(device)
-    model.eval()
-
-    metadata = pickling.unpickle_from_file(parameters['metadata_path'])
-    view = metadata["full_view"]
-
-    image = loading.load_image(
+    model_input = load_inputs(
         image_path=parameters["cropped_mammogram_path"],
-        view=view,
-        horizontal_flip=metadata["horizontal_flip"],
+        metadata_path=parameters["metadata_path"],
+        use_heatmaps=parameters["use_heatmaps"],
+        benign_heatmap_path=parameters["heatmap_path_benign"],
+        malignant_heatmap_path=parameters["heatmap_path_malignant"],
     )
-    if parameters["use_heatmaps"]:
-        loaded_heatmaps = loading.load_heatmaps(
-            benign_heatmap_path=parameters["heatmap_path_benign"],
-            malignant_heatmap_path=parameters["heatmap_path_malignant"],
-            view=view,
-            horizontal_flip=metadata["horizontal_flip"],
-        )
-    else:
-        loaded_heatmaps = None
+    assert model_input.metadata["full_view"] == parameters["view"]
 
     all_predictions = []
     for data_batch in tools.partition_batch(range(parameters["num_epochs"]), parameters["batch_size"]):
         batch = []
         for _ in data_batch:
-            cropped_image, cropped_heatmaps = loading.augment_and_normalize_image(
-                image=image,
-                auxiliary_image=loaded_heatmaps,
-                view=view,
-                best_center=metadata["best_center"],
+            batch.append(process_augment_inputs(
+                model_input=model_input,
                 random_number_generator=random_number_generator,
-                augmentation=parameters["augmentation"],
-                max_crop_noise=parameters["max_crop_noise"],
-                max_crop_size_noise=parameters["max_crop_size_noise"],
-            )
-            if parameters["use_heatmaps"]:
-                batch.append(np.concatenate([
-                    cropped_image[:, :, np.newaxis],
-                    cropped_heatmaps,
-                ], axis=2))
-            else:
-                batch.append(cropped_image[:, :, np.newaxis])
-        tensor_batch = torch.tensor(np.stack(batch)).permute(0, 3, 1, 2).to(device)
-        y_hat = model.single_forward(tensor_batch, view=view)
+                parameters=parameters,
+            ))
+        tensor_batch = batch_to_tensor(batch, device)
+        y_hat = model(tensor_batch)
         predictions = np.exp(y_hat.cpu().detach().numpy())[:, :2, 1]
         all_predictions.append(predictions)
     agg_predictions = np.concatenate(all_predictions, axis=0).mean(0)
-    print(json.dumps({
+    predictions_dict = {
         "benign": float(agg_predictions[0]),
         "malignant": float(agg_predictions[1]),
-    }))
+    }
+    print(json.dumps(predictions_dict))
 
 
 def main():
     parser = argparse.ArgumentParser(description='Run image-only model or image+heatmap model')
+    parser.add_argument('--view', required=True)
     parser.add_argument('--model-path', required=True)
     parser.add_argument('--cropped-mammogram-path', required=True)
     parser.add_argument('--metadata-path', required=True)
@@ -127,6 +163,7 @@ def main():
     args = parser.parse_args()
 
     parameters = {
+        "view": args.view,
         "model_path": args.model_path,
         "cropped_mammogram_path": args.cropped_mammogram_path,
         "metadata_path": args.metadata_path,
