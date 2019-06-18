@@ -42,6 +42,9 @@ class ModelInput:
 
 
 def load_model(parameters):
+    """
+    Loads trained cancer classifier
+    """
     input_channels = 3 if parameters["use_heatmaps"] else 1
     model = models.SingleImageBreastModel(input_channels)
     model.load_state_from_shared_weights(
@@ -59,6 +62,9 @@ def load_model(parameters):
 
 def load_inputs(image_path, metadata_path,
                 use_heatmaps, benign_heatmap_path=None, malignant_heatmap_path=None):
+    """
+    Load a single input example, optionally with heatmaps
+    """
     if use_heatmaps:
         assert benign_heatmap_path is not None
         assert malignant_heatmap_path is not None
@@ -84,6 +90,9 @@ def load_inputs(image_path, metadata_path,
 
 
 def process_augment_inputs(model_input, random_number_generator, parameters):
+    """
+    Augment, normalize and convert inputs to np.ndarray
+    """
     cropped_image, cropped_heatmaps = loading.augment_and_normalize_image(
         image=model_input.image,
         auxiliary_image=model_input.heatmaps,
@@ -104,6 +113,9 @@ def process_augment_inputs(model_input, random_number_generator, parameters):
 
 
 def batch_to_tensor(batch, device):
+    """
+    Convert list of input ndarrays to tensor on device
+    """
     return torch.tensor(np.stack(batch)).permute(0, 3, 1, 2).to(device)
 
 

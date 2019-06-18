@@ -39,6 +39,9 @@ from src.constants import VIEWS, VIEWANGLES, LABELS, MODELMODES
 
 
 def load_model(parameters):
+    """
+    Loads trained cancer classifier
+    """
     input_channels = 3 if parameters["use_heatmaps"] else 1
     model_class = {
         MODELMODES.VIEW_SPLIT: models.SplitBreastModel,

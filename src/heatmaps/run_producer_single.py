@@ -34,6 +34,9 @@ import src.heatmaps.run_producer as run_producer
 
 
 def produce_heatmaps(parameters):
+    """
+    Generate heatmaps for single example
+    """
     random.seed(parameters['seed'])
     image_path = parameters["cropped_mammogram_path"]
     model, device = run_producer.load_model(parameters)

@@ -83,6 +83,9 @@ Stage 4b: Run Classifier (Image+Heatmaps)
 {"benign": 0.052365876734256744, "malignant": 0.005510155577212572}
 ```
 
+### Image-level Notebook
+
+We have included a [sample notebook](sample_notebook.ipynb) that contains code for running the classifiers with and without heatmaps (excludes preprocessing).
 
 ## Data
 

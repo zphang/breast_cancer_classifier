@@ -186,6 +186,9 @@ def save_heatmaps(heatmap_malignant, heatmap_benign, short_file_path, view, hori
 
 
 def get_image_path(short_file_path, parameters):
+    """
+    Convert short_file_path to full file path
+    """
     image_extension = '.hdf5' if parameters['use_hdf5'] else '.png'
     return os.path.join(parameters['original_image_path'], short_file_path + image_extension)
 
@@ -213,7 +216,9 @@ def sample_patches(exam, parameters):
 
 
 def sample_patches_single(image_path, view, horizontal_flip, parameters):
-
+    """
+    Sample patches for a single mammogram image
+    """
     image, width_stride_list, length_stride_list = ori_image_prepare(
         image_path,
         view,
@@ -299,6 +304,9 @@ def making_heatmap_with_large_minibatch_potential(parameters, model, exam_list, 
 
 
 def load_model(parameters):
+    """
+    Load trained patch classifier
+    """
     if (parameters["device_type"] == "gpu") and torch.has_cudnn:
         device = torch.device("cuda:{}".format(parameters["gpu_number"]))
     else:
@@ -313,7 +321,7 @@ def load_model(parameters):
 
 def produce_heatmaps(model, device, parameters):
     """
-    Loads trained patch classifier and generates heatmaps for all exams
+    Generates heatmaps for all exams
     """
     # Load exam info
     exam_list = pickling.unpickle_from_file(parameters['data_file'])    

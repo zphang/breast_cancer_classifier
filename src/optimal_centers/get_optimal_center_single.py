@@ -31,6 +31,9 @@ import src.optimal_centers.get_optimal_centers as get_optimal_centers
 
 
 def get_optimal_center_single(cropped_mammogram_path, metadata_path):
+    """
+    Get optimal center for single example
+    """
     metadata = pickling.unpickle_from_file(metadata_path)
     image = reading_images.read_image_png(cropped_mammogram_path)
     optimal_center = get_optimal_centers.extract_center(metadata, image)

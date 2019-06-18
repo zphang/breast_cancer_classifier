@@ -30,6 +30,9 @@ import src.utilities.pickling as pickling
 def crop_single_mammogram(mammogram_path, horizontal_flip, view,
                           cropped_mammogram_path, metadata_path,
                           num_iterations, buffer_size):
+    """
+    Crop a single mammogram image
+    """
     metadata_dict = dict(
         short_file_path=None,
         horizontal_flip=horizontal_flip,

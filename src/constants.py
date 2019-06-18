@@ -69,7 +69,6 @@ class LABELS:
 class MODELMODES:
     VIEW_SPLIT = "view_split"
     IMAGE = "image"
-    IMAGE_QUAD_SINGLE = "image_quad_single"
 
 
 INPUT_SIZE_DICT = {

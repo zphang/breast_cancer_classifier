@@ -331,6 +331,11 @@ def crop_mammogram_one_image(scan, input_file_path, output_file_path, num_iterat
 
 def crop_mammogram_one_image_short_path(scan, input_data_folder, output_data_folder,
                                         num_iterations, buffer_size):
+    """
+    Crops a mammogram from a short_file_path
+
+    See: crop_mammogram_one_image
+    """
     full_input_file_path = os.path.join(input_data_folder, scan['short_file_path']+'.png')
     full_output_file_path = os.path.join(output_data_folder, scan['short_file_path'] + '.png')
     cropping_info = crop_mammogram_one_image(
