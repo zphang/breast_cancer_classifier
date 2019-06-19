@@ -32,7 +32,10 @@ This repository is licensed under the terms of the GNU AGPLv3 license.
 
 ### Exam-level
 
-`run.sh` will automatically run the entire pipeline and save the prediction results in csv. 
+```bash
+bash run.sh
+``` 
+will automatically run the entire pipeline and save the prediction results in csv. 
 
 We recommend running the code with a gpu (set by default). To run the code with cpu only, please change `DEVICE_TYPE` in `run.sh` to 'cpu'.  
 
@@ -66,7 +69,7 @@ Predictions using *image-and-heatmaps* model (found in `sample_output/imageheatm
 To use the *image-wise* model, run a command such as the following:
 
 ```bash
-source run_single.sh "sample_data/images/0_L_CC.png" "L-CC"
+bash run_single.sh "sample_data/images/0_L_CC.png" "L-CC"
 ``` 
 
 where the first argument is path to a mammogram image, and the second argument is the view corresponding to that image.
