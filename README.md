@@ -16,7 +16,7 @@ Both models act on screening mammography exams with four standard views (L-CC, R
 ## Prerequisites
 
 * Python (3.6)
-* PyTorch (0.4.0)
+* PyTorch (0.4.1)
 * torchvision (0.2.0)
 * NumPy (1.14.3)
 * SciPy (1.0.0)
@@ -33,6 +33,8 @@ This repository is licensed under the terms of the GNU AGPLv3 license.
 ## How to run the code
 
 ### Exam-level
+
+Here we describe how to get predictions from *view-wise* model, which is our best-performing model. This model takes 4 images from each view as input and outputs predictions for each exam.
 
 ```bash
 bash run.sh
@@ -65,6 +67,8 @@ Predictions using *image-and-heatmaps* model (found in `sample_output/imageheatm
 | 3     | 0.4181       | 0.3172       | 0.3174         | 0.0485          |
 
 ### Image-level
+
+Here we also upload *image-wise* model, which is different from and performs worse than the *view-wise* model described above. The csv output from *view-wise* model will be different from that of *image-wise* model in this section. Because this model has the benefit of creating predictions for each image separately, we make this model public to facilitate transfer learning.
 
 To use the *image-wise* model, run a command such as the following:
 
