@@ -221,7 +221,9 @@ class ViewResNetV2(nn.Module):
         h = self.first_conv(x)
         h = self.first_pool(h)
         for i, layer in enumerate(self.layer_list):
+            ## print(i, "IN", tuple(h.shape))
             h = layer(h)
+            ## print(i, "OUT", tuple(h.shape))
         h = self.final_bn(h)
         h = self.relu(h)
         return h
