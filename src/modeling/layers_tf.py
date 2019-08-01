@@ -30,7 +30,7 @@ def batch_norm(inputs, training, data_format, name=None):
 def conv2d_fixed_padding(inputs, filters, kernel_size, strides, data_format, name=None):
     return tf.layers.conv2d(
         inputs=inputs, filters=filters, kernel_size=kernel_size, strides=strides,
-        # padding=('SAME' if strides == 1 else 'VALID'), use_bias=False,
+
         padding='SAME', use_bias=False,
         kernel_initializer=tf.variance_scaling_initializer(),
         data_format=data_format,
@@ -65,7 +65,6 @@ def basic_block_v2(inputs, planes, training, data_format, strides, downsample=No
         residual = inputs
 
         # Phase 1
-        ##print(0, inputs.shape)
         out = batch_norm(inputs, training, data_format, name="bn1")
         out = tf.nn.relu(out)
         if downsample:
@@ -85,18 +84,14 @@ def basic_block_v2(inputs, planes, training, data_format, strides, downsample=No
                 data_format=data_format,
                 name="downsample",
             )
-            ##print(x.shape, residual.shape, strides)
         out = conv3x3(out, planes, data_format, strides=strides, name="conv1")
-        ##print(1, out.shape, strides)
 
         # Phase 2
         out = batch_norm(out, training, data_format, name="bn2")
         out = tf.nn.relu(out)
         out = conv3x3(out, planes, data_format, strides=1, name="conv2")
-        ##print(2, out.shape)
 
         out = out + residual
-        ##print(3, out.shape)
         return out
 
 
