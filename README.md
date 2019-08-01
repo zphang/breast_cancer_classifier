@@ -9,9 +9,11 @@ This is an implementation of the model used for breast cancer classification as 
 
 Both models act on screening mammography exams with four standard views (L-CC, R-CC, L-MLO, R-MLO). As a part of this repository, we provide 4 sample exams (in `sample_data/images` directory and exam list stored in `sample_data/exam_list_before_cropping.pkl`). Heatmap generation model and cancer classification models are implemented in PyTorch. 
 
-**Update (2019/05/15)**: Fixed a minor bug that caused the output DataFrame columns (`left_malignant`, `right_benign`) to be swapped. Note that this does not affect the operation of the model.
+**Update (2019/08/01)**: We have added a [TensorFlow](#image-level-tensorflow) implementation of our *image-wise* model.
 
 **Update (2019/06/21)**: We have included the *image-wise* model as described in the paper that generates predictions based on a single mammogram image. This model slightly under-performs the *view-wise* model used above, but can be used on single mammogram images as opposed to full exams.
+
+**Update (2019/05/15)**: Fixed a minor bug that caused the output DataFrame columns (`left_malignant`, `right_benign`) to be swapped. Note that this does not affect the operation of the model.
 
 ## Prerequisites
 
