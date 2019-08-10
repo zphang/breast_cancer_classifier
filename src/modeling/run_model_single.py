@@ -145,7 +145,8 @@ def run(parameters):
                 parameters=parameters,
             ))
         tensor_batch = batch_to_tensor(batch, device)
-        y_hat = model(tensor_batch)
+        with torch.no_grad():
+            y_hat = model(tensor_batch)
         predictions = np.exp(y_hat.cpu().detach().numpy())[:, :, 1]
         all_predictions.append(predictions)
     agg_predictions = np.concatenate(all_predictions, axis=0).mean(0)

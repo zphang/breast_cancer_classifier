@@ -27,11 +27,11 @@ def batch_norm(inputs, training, data_format, name=None):
     )
 
 
-def conv2d_fixed_padding(inputs, filters, kernel_size, strides, data_format, name=None):
+def conv2d_fixed_padding(inputs, filters, kernel_size, strides, data_format,
+                         padding="SAME", name=None):
     return tf.layers.conv2d(
         inputs=inputs, filters=filters, kernel_size=kernel_size, strides=strides,
-
-        padding='SAME', use_bias=False,
+        padding=padding, use_bias=False,
         kernel_initializer=tf.variance_scaling_initializer(),
         data_format=data_format,
         name=name,
@@ -39,7 +39,29 @@ def conv2d_fixed_padding(inputs, filters, kernel_size, strides, data_format, nam
 
 
 def conv3x3(inputs, planes, data_format, strides, name=None):
-    return conv2d_fixed_padding(
+    inputs_shape = inputs.shape.as_list()
+
+    # Basically: Pad a dimension if it's even, and the slice off the extra output
+    do_pad = False
+    if inputs_shape[2] % 2 == 0:
+        h_in_pad = [0, 1]
+        h_out_slice = slice(None, -1)
+        do_pad = True
+    else:
+        h_in_pad = [0, 0]
+        h_out_slice = slice(None)
+    if inputs_shape[3] % 2 == 0:
+        w_in_pad = [0, 1]
+        w_out_slice = slice(None, -1)
+        do_pad = True
+    else:
+        w_in_pad = [0, 0]
+        w_out_slice = slice(None)
+
+    if do_pad:
+        inputs = tf.pad(inputs, [[0, 0], [0, 0], h_in_pad, w_in_pad], "CONSTANT")
+
+    conv_out = conv2d_fixed_padding(
         inputs=inputs,
         filters=planes,
         kernel_size=3,
@@ -47,6 +69,10 @@ def conv3x3(inputs, planes, data_format, strides, name=None):
         data_format=data_format,
         name=name,
     )
+
+    if do_pad:
+        conv_out = conv_out[:, :, h_out_slice, w_out_slice]
+    return conv_out
 
 
 def conv1x1(inputs, planes, data_format, strides, name=None):

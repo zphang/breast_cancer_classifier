@@ -94,7 +94,7 @@ Stage 4b: Run Classifier (Image+Heatmaps)
 
 #### Image-level (TensorFlow)
 
-We have ported our *image-wise* model to TensorFlow to facilitate use by other teams. Because of [slight differences between PyTorch and TensorFlow](https://github.com/pytorch/pytorch/issues/3867), the outputs may be numerically different, but the overall performance of the model should be similar. Using `run_single_tf.sh`, which simply swaps the final model script to use the TensorFlow version, you should get the following output:
+We have ported our *image-wise* model to TensorFlow to facilitate use by other teams. The outputs should be nearly identical to those of the PyTorch model. Using `run_single_tf.sh`, which simply swaps the final model script to use the TensorFlow version, you should get the following output:
 
 ```bash
 bash run_single_tf.sh "sample_data/images/0_L_CC.png" "L-CC"
@@ -102,9 +102,9 @@ bash run_single_tf.sh "sample_data/images/0_L_CC.png" "L-CC"
 
 ```
 Stage 4a: Run Classifier (Image)
-{"benign": 0.03804783523082733, "malignant": 0.00817797426134348}
+{"benign": 0.04019179195165634, "malignant": 0.008045281283557415}
 Stage 4b: Run Classifier (Image+Heatmaps)
-{"benign": 0.05357364937663078, "malignant": 0.005720928311347961}
+{"benign": 0.05236595869064331, "malignant": 0.005510156974196434}
 ```
 
 #### Image-level Notebook

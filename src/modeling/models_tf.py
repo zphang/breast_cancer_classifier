@@ -239,13 +239,14 @@ def view_resnet_v2(inputs, training, num_filters,
                 kernel_size=first_layer_kernel_size,
                 strides=first_layer_conv_stride,
                 data_format=DATA_FORMAT,
+                padding="valid",
                 name="first_conv",
             )
             h = tf.layers.max_pooling2d(
                 inputs=h,
                 pool_size=first_pool_size,
                 strides=first_pool_stride,
-                padding='SAME',
+                padding='valid',
                 data_format=DATA_FORMAT,
             )
         current_num_filters = num_filters

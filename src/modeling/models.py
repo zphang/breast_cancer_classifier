@@ -219,9 +219,12 @@ class ViewResNetV2(nn.Module):
 
     def forward(self, x):
         h = self.first_conv(x)
+        print("self.first_conv(x)", h.shape)
         h = self.first_pool(h)
+        print("self.first_pool(h)", h.shape)
         for i, layer in enumerate(self.layer_list):
             h = layer(h)
+            print("h = layer(h) {}".format(i), h.shape)
         h = self.final_bn(h)
         h = self.relu(h)
         return h
