@@ -25,124 +25,12 @@ TensorFlow model definition and utils
 """
 
 import tensorflow as tf
-import numpy as np
 
 import src.modeling.layers_tf as layers
+import src.utilities.tf_utils as tf_utils
 from src.constants import VIEWS
 
 DATA_FORMAT = "channels_first"
-TF_TORCH_RESNET_MAP = {
-    "resnet/first/first_conv/kernel:0": "first_conv.weight",
-    "resnet/major_1/block_0/basic_block/bn1/gamma:0": "layer_list.0.0.bn1.weight",
-    "resnet/major_1/block_0/basic_block/bn2/gamma:0": "layer_list.0.0.bn2.weight",
-    "resnet/major_1/block_1/basic_block/bn1/gamma:0": "layer_list.0.1.bn1.weight",
-    "resnet/major_1/block_1/basic_block/bn2/gamma:0": "layer_list.0.1.bn2.weight",
-    "resnet/major_2/block_0/basic_block/bn1/gamma:0": "layer_list.1.0.bn1.weight",
-    "resnet/major_1/block_0/basic_block/bn1/beta:0": "layer_list.0.0.bn1.bias",
-    "resnet/major_1/block_0/basic_block/bn2/beta:0": "layer_list.0.0.bn2.bias",
-    "resnet/major_1/block_1/basic_block/bn1/beta:0": "layer_list.0.1.bn1.bias",
-    "resnet/major_1/block_1/basic_block/bn2/beta:0": "layer_list.0.1.bn2.bias",
-    "resnet/major_2/block_0/basic_block/bn1/beta:0": "layer_list.1.0.bn1.bias",
-    "resnet/major_1/block_0/basic_block/downsample/kernel:0": "layer_list.0.0.downsample.0.weight",
-    "resnet/major_1/block_0/basic_block/conv1/kernel:0": "layer_list.0.0.conv1.weight",
-    "resnet/major_1/block_0/basic_block/conv2/kernel:0": "layer_list.0.0.conv2.weight",
-    "resnet/major_1/block_1/basic_block/conv1/kernel:0": "layer_list.0.1.conv1.weight",
-    "resnet/major_1/block_1/basic_block/conv2/kernel:0": "layer_list.0.1.conv2.weight",
-    "resnet/major_2/block_0/basic_block/downsample/kernel:0": "layer_list.1.0.downsample.0.weight",
-    "resnet/major_2/block_0/basic_block/conv1/kernel:0": "layer_list.1.0.conv1.weight",
-    "resnet/major_2/block_0/basic_block/bn2/gamma:0": "layer_list.1.0.bn2.weight",
-    "resnet/major_2/block_1/basic_block/bn1/gamma:0": "layer_list.1.1.bn1.weight",
-    "resnet/major_2/block_1/basic_block/bn2/gamma:0": "layer_list.1.1.bn2.weight",
-    "resnet/major_3/block_0/basic_block/bn1/gamma:0": "layer_list.2.0.bn1.weight",
-    "resnet/major_2/block_0/basic_block/bn2/beta:0": "layer_list.1.0.bn2.bias",
-    "resnet/major_2/block_1/basic_block/bn1/beta:0": "layer_list.1.1.bn1.bias",
-    "resnet/major_2/block_1/basic_block/bn2/beta:0": "layer_list.1.1.bn2.bias",
-    "resnet/major_3/block_0/basic_block/bn1/beta:0": "layer_list.2.0.bn1.bias",
-    "resnet/major_2/block_0/basic_block/conv2/kernel:0": "layer_list.1.0.conv2.weight",
-    "resnet/major_2/block_1/basic_block/conv1/kernel:0": "layer_list.1.1.conv1.weight",
-    "resnet/major_2/block_1/basic_block/conv2/kernel:0": "layer_list.1.1.conv2.weight",
-    "resnet/major_3/block_0/basic_block/downsample/kernel:0": "layer_list.2.0.downsample.0.weight",
-    "resnet/major_3/block_0/basic_block/conv1/kernel:0": "layer_list.2.0.conv1.weight",
-    "resnet/major_3/block_0/basic_block/bn2/gamma:0": "layer_list.2.0.bn2.weight",
-    "resnet/major_3/block_1/basic_block/bn1/gamma:0": "layer_list.2.1.bn1.weight",
-    "resnet/major_3/block_1/basic_block/bn2/gamma:0": "layer_list.2.1.bn2.weight",
-    "resnet/major_4/block_0/basic_block/bn1/gamma:0": "layer_list.3.0.bn1.weight",
-    "resnet/major_3/block_0/basic_block/bn2/beta:0": "layer_list.2.0.bn2.bias",
-    "resnet/major_3/block_1/basic_block/bn1/beta:0": "layer_list.2.1.bn1.bias",
-    "resnet/major_3/block_1/basic_block/bn2/beta:0": "layer_list.2.1.bn2.bias",
-    "resnet/major_4/block_0/basic_block/bn1/beta:0": "layer_list.3.0.bn1.bias",
-    "resnet/major_3/block_0/basic_block/conv2/kernel:0": "layer_list.2.0.conv2.weight",
-    "resnet/major_3/block_1/basic_block/conv1/kernel:0": "layer_list.2.1.conv1.weight",
-    "resnet/major_3/block_1/basic_block/conv2/kernel:0": "layer_list.2.1.conv2.weight",
-    "resnet/major_4/block_0/basic_block/downsample/kernel:0": "layer_list.3.0.downsample.0.weight",
-    "resnet/major_4/block_0/basic_block/conv1/kernel:0": "layer_list.3.0.conv1.weight",
-    "resnet/major_4/block_0/basic_block/bn2/gamma:0": "layer_list.3.0.bn2.weight",
-    "resnet/major_4/block_1/basic_block/bn1/gamma:0": "layer_list.3.1.bn1.weight",
-    "resnet/major_4/block_1/basic_block/bn2/gamma:0": "layer_list.3.1.bn2.weight",
-    "resnet/major_5/block_0/basic_block/bn1/gamma:0": "layer_list.4.0.bn1.weight",
-    "resnet/major_4/block_0/basic_block/bn2/beta:0": "layer_list.3.0.bn2.bias",
-    "resnet/major_4/block_1/basic_block/bn1/beta:0": "layer_list.3.1.bn1.bias",
-    "resnet/major_4/block_1/basic_block/bn2/beta:0": "layer_list.3.1.bn2.bias",
-    "resnet/major_5/block_0/basic_block/bn1/beta:0": "layer_list.4.0.bn1.bias",
-    "resnet/major_4/block_0/basic_block/conv2/kernel:0": "layer_list.3.0.conv2.weight",
-    "resnet/major_4/block_1/basic_block/conv1/kernel:0": "layer_list.3.1.conv1.weight",
-    "resnet/major_4/block_1/basic_block/conv2/kernel:0": "layer_list.3.1.conv2.weight",
-    "resnet/major_5/block_0/basic_block/downsample/kernel:0": "layer_list.4.0.downsample.0.weight",
-    "resnet/major_5/block_0/basic_block/conv1/kernel:0": "layer_list.4.0.conv1.weight",
-    "resnet/major_5/block_0/basic_block/bn2/gamma:0": "layer_list.4.0.bn2.weight",
-    "resnet/major_5/block_1/basic_block/bn1/gamma:0": "layer_list.4.1.bn1.weight",
-    "resnet/major_5/block_1/basic_block/bn2/gamma:0": "layer_list.4.1.bn2.weight",
-    "resnet/major_5/block_0/basic_block/bn2/beta:0": "layer_list.4.0.bn2.bias",
-    "resnet/major_5/block_1/basic_block/bn1/beta:0": "layer_list.4.1.bn1.bias",
-    "resnet/major_5/block_1/basic_block/bn2/beta:0": "layer_list.4.1.bn2.bias",
-    "resnet/major_5/block_0/basic_block/conv2/kernel:0": "layer_list.4.0.conv2.weight",
-    "resnet/major_5/block_1/basic_block/conv1/kernel:0": "layer_list.4.1.conv1.weight",
-    "resnet/major_5/block_1/basic_block/conv2/kernel:0": "layer_list.4.1.conv2.weight",
-    "resnet/major_1/block_0/basic_block/bn1/moving_mean:0": "layer_list.0.0.bn1.running_mean",
-    "resnet/major_1/block_0/basic_block/bn2/moving_mean:0": "layer_list.0.0.bn2.running_mean",
-    "resnet/major_1/block_1/basic_block/bn1/moving_mean:0": "layer_list.0.1.bn1.running_mean",
-    "resnet/major_1/block_1/basic_block/bn2/moving_mean:0": "layer_list.0.1.bn2.running_mean",
-    "resnet/major_2/block_0/basic_block/bn1/moving_mean:0": "layer_list.1.0.bn1.running_mean",
-    "resnet/major_1/block_0/basic_block/bn1/moving_variance:0": "layer_list.0.0.bn1.running_var",
-    "resnet/major_1/block_0/basic_block/bn2/moving_variance:0": "layer_list.0.0.bn2.running_var",
-    "resnet/major_1/block_1/basic_block/bn1/moving_variance:0": "layer_list.0.1.bn1.running_var",
-    "resnet/major_1/block_1/basic_block/bn2/moving_variance:0": "layer_list.0.1.bn2.running_var",
-    "resnet/major_2/block_0/basic_block/bn1/moving_variance:0": "layer_list.1.0.bn1.running_var",
-    "resnet/major_2/block_0/basic_block/bn2/moving_mean:0": "layer_list.1.0.bn2.running_mean",
-    "resnet/major_2/block_1/basic_block/bn1/moving_mean:0": "layer_list.1.1.bn1.running_mean",
-    "resnet/major_2/block_1/basic_block/bn2/moving_mean:0": "layer_list.1.1.bn2.running_mean",
-    "resnet/major_3/block_0/basic_block/bn1/moving_mean:0": "layer_list.2.0.bn1.running_mean",
-    "resnet/major_2/block_0/basic_block/bn2/moving_variance:0": "layer_list.1.0.bn2.running_var",
-    "resnet/major_2/block_1/basic_block/bn1/moving_variance:0": "layer_list.1.1.bn1.running_var",
-    "resnet/major_2/block_1/basic_block/bn2/moving_variance:0": "layer_list.1.1.bn2.running_var",
-    "resnet/major_3/block_0/basic_block/bn1/moving_variance:0": "layer_list.2.0.bn1.running_var",
-    "resnet/major_3/block_0/basic_block/bn2/moving_mean:0": "layer_list.2.0.bn2.running_mean",
-    "resnet/major_3/block_1/basic_block/bn1/moving_mean:0": "layer_list.2.1.bn1.running_mean",
-    "resnet/major_3/block_1/basic_block/bn2/moving_mean:0": "layer_list.2.1.bn2.running_mean",
-    "resnet/major_4/block_0/basic_block/bn1/moving_mean:0": "layer_list.3.0.bn1.running_mean",
-    "resnet/major_3/block_0/basic_block/bn2/moving_variance:0": "layer_list.2.0.bn2.running_var",
-    "resnet/major_3/block_1/basic_block/bn1/moving_variance:0": "layer_list.2.1.bn1.running_var",
-    "resnet/major_3/block_1/basic_block/bn2/moving_variance:0": "layer_list.2.1.bn2.running_var",
-    "resnet/major_4/block_0/basic_block/bn1/moving_variance:0": "layer_list.3.0.bn1.running_var",
-    "resnet/major_4/block_0/basic_block/bn2/moving_mean:0": "layer_list.3.0.bn2.running_mean",
-    "resnet/major_4/block_1/basic_block/bn1/moving_mean:0": "layer_list.3.1.bn1.running_mean",
-    "resnet/major_4/block_1/basic_block/bn2/moving_mean:0": "layer_list.3.1.bn2.running_mean",
-    "resnet/major_5/block_0/basic_block/bn1/moving_mean:0": "layer_list.4.0.bn1.running_mean",
-    "resnet/major_4/block_0/basic_block/bn2/moving_variance:0": "layer_list.3.0.bn2.running_var",
-    "resnet/major_4/block_1/basic_block/bn1/moving_variance:0": "layer_list.3.1.bn1.running_var",
-    "resnet/major_4/block_1/basic_block/bn2/moving_variance:0": "layer_list.3.1.bn2.running_var",
-    "resnet/major_5/block_0/basic_block/bn1/moving_variance:0": "layer_list.4.0.bn1.running_var",
-    "resnet/major_5/block_0/basic_block/bn2/moving_mean:0": "layer_list.4.0.bn2.running_mean",
-    "resnet/major_5/block_1/basic_block/bn1/moving_mean:0": "layer_list.4.1.bn1.running_mean",
-    "resnet/major_5/block_1/basic_block/bn2/moving_mean:0": "layer_list.4.1.bn2.running_mean",
-    "resnet/major_5/block_0/basic_block/bn2/moving_variance:0": "layer_list.4.0.bn2.running_var",
-    "resnet/major_5/block_1/basic_block/bn1/moving_variance:0": "layer_list.4.1.bn1.running_var",
-    "resnet/major_5/block_1/basic_block/bn2/moving_variance:0": "layer_list.4.1.bn2.running_var",
-    "resnet/final/bn/gamma:0": "final_bn.weight",
-    "resnet/final/bn/beta:0": "final_bn.bias",
-    "resnet/final/bn/moving_mean:0": "final_bn.running_mean",
-    "resnet/final/bn/moving_variance:0": "final_bn.running_var",
-}
 
 
 def single_image_breast_model(inputs, training):
@@ -163,7 +51,8 @@ def single_image_breast_model(inputs, training):
         return h
 
 
-def construct_single_image_breast_model_match_dict(view_str, tf_variables, torch_weights):
+def construct_single_image_breast_model_match_dict(
+        view_str, tf_variables, torch_weights, tf_torch_weights_map):
     """
     view_str: e.g. "r_mlo"
     """
@@ -178,29 +67,23 @@ def construct_single_image_breast_model_match_dict(view_str, tf_variables, torch
         if "resnet" not in tf_var.name:
             continue
         lookup_key = tf_var_name.replace("model/", "")
-        weight = torch_weights[torch_resnet_prefix + TF_TORCH_RESNET_MAP[lookup_key]]
+        weight = torch_weights[torch_resnet_prefix + tf_torch_weights_map[lookup_key]]
         if len(weight.shape) == 4:
-            weight = convert_conv_torch2tf(weight)
+            weight = tf_utils.convert_conv_torch2tf(weight)
         assert tf_var.shape == weight.shape
         match_dict[tf_var] = weight
     short_view_str = view_str.replace("_", "")
     match_dict[tf_var_dict["model/fc1/dense/kernel:0"]] = \
-        convert_fc_weight_torch2tf(torch_weights["fc1_{}.weight".format(short_view_str)])
+        tf_utils.convert_fc_weight_torch2tf(torch_weights["fc1_{}.weight".format(short_view_str)])
     match_dict[tf_var_dict["model/fc1/dense/bias:0"]] = \
         torch_weights["fc1_{}.bias".format(short_view_str)]
     match_dict[tf_var_dict["model/output_layer/dense/kernel:0"]] = \
-        convert_fc_weight_torch2tf(torch_weights["output_layer_{}.fc_layer.weight".format(short_view_str)])[:, :4]
+        tf_utils.convert_fc_weight_torch2tf(
+            torch_weights["output_layer_{}.fc_layer.weight".format(short_view_str)])[:, :4]
     match_dict[tf_var_dict["model/output_layer/dense/bias:0"]] = \
         torch_weights["output_layer_{}.fc_layer.bias".format(short_view_str)][:4]
     assert len(match_dict) == len(tf_variables)
     return match_dict
-
-
-def construct_weight_assign_ops(match_dict):
-    assign_list = []
-    for tf_var, np_weights in match_dict.items():
-        assign_list.append(tf_var.assign(np_weights))
-    return assign_list
 
 
 def four_view_resnet(inputs, training):
@@ -293,22 +176,3 @@ def make_layer(inputs, planes, training, blocks, stride=1):
                 downsample=False,
             )
     return h
-
-
-def get_tf_variables(graph, batch_norm_key="bn"):
-    param_variables = graph.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
-    bn_running_variables = []
-    for variable in graph.get_collection(tf.GraphKeys.GLOBAL_VARIABLES):
-        if batch_norm_key in variable.name \
-                and "moving" in variable.name:
-            bn_running_variables.append(variable)
-    return param_variables + bn_running_variables
-
-
-def convert_conv_torch2tf(w):
-    # [C_out, C_in, H, W] => [H, W, C_in, C_out]
-    return np.transpose(w, [2, 3, 1, 0])
-
-
-def convert_fc_weight_torch2tf(w):
-    return w.swapaxes(0, 1)

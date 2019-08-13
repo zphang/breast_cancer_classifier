@@ -29,6 +29,7 @@ import json
 import tensorflow as tf
 
 import src.utilities.pickling as pickling
+import src.utilities.tf_utils as tf_utils
 import src.utilities.tools as tools
 import src.modeling.models_tf as models
 import src.data_loading.loading as loading
@@ -66,14 +67,17 @@ def load_model(parameters):
     sess = tf.Session(graph=graph, config=tf.ConfigProto(
         gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
     ))
+    with open(parameters["tf_torch_weights_map_path"]) as f:
+        tf_torch_weights_map = json.loads(f.read())
 
     with sess.as_default():
         match_dict = models.construct_single_image_breast_model_match_dict(
             view_str=view_str,
-            tf_variables=models.get_tf_variables(graph, batch_norm_key="bn"),
+            tf_variables=tf_utils.get_tf_variables(graph, batch_norm_key="bn"),
             torch_weights=parameters["model_path"],
+            tf_torch_weights_map=tf_torch_weights_map,
         )
-        sess.run(models.construct_weight_assign_ops(match_dict))
+        sess.run(tf_utils.construct_weight_assign_ops(match_dict))
     return sess, x, y
 
 
@@ -178,6 +182,7 @@ def main():
     parser = argparse.ArgumentParser(description='Run image-only model or image+heatmap model')
     parser.add_argument('--view', required=True)
     parser.add_argument('--model-path', required=True)
+    parser.add_argument('--tf-torch-weights-map-path', required=True)
     parser.add_argument('--cropped-mammogram-path', required=True)
     parser.add_argument('--metadata-path', required=True)
     parser.add_argument('--batch-size', default=1, type=int)
@@ -195,6 +200,7 @@ def main():
     parameters = {
         "view": args.view,
         "model_path": args.model_path,
+        "tf_torch_weights_map_path": args.tf_torch_weights_map_path,
         "cropped_mammogram_path": args.cropped_mammogram_path,
         "metadata_path": args.metadata_path,
         "device_type": args.device_type,
@@ -215,4 +221,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
