@@ -29,9 +29,9 @@ import numpy as np
 import random
 
 import tensorflow as tf
+from tensorflow.contrib import slim
+from nets.densenet import densenet121, densenet_arg_scope
 import torch
-from keras.applications.densenet import DenseNet121
-from keras import backend as K
 
 import src.data_loading.loading as loading
 import src.utilities.pickling as pickling
@@ -47,7 +47,9 @@ def construct_densenet_match_dict(tf_variables, torch_weights, tf_torch_weights_
     match_dict = {}
     for tf_key, v in tf_var_dict.items():
         torch_w = torch_weights[tf_torch_weights_map[tf_key]].cpu().numpy()
-        if len(v.shape) == 4:
+        if tf_key == "densenet121/logits/weights:0":
+            torch_w = tf_utils.convert_fc_weight_torch2tf(torch_w)[[np.newaxis, np.newaxis]]
+        elif len(v.shape) == 4:
             torch_w = tf_utils.convert_conv_torch2tf(torch_w)
         elif len(v.shape) == 2:
             torch_w = tf_utils.convert_fc_weight_torch2tf(torch_w)
@@ -62,31 +64,36 @@ def load_model_tf(parameters):
     else:
         device_str = "/cpu:0"
 
-    # Setup model
+    # Setup Graph
     graph = tf.Graph()
+    with graph.as_default():
+        with tf.device(device_str):
+            x = tf.placeholder(tf.float32, [None, 256, 256, 3])
+            with slim.arg_scope(densenet_arg_scope(weight_decay=0.0, data_format='NHWC')):
+                densenet121_net, end_points = densenet121(
+                    x,
+                    num_classes=parameters["number_of_classes"],
+                    data_format='NHWC',
+                    is_training=False,
+                )
+            y_logits = densenet121_net[:, 0, 0, :]
+            y = tf.nn.softmax(y_logits)
+
+    # Load weights
     sess = tf.Session(graph=graph, config=tf.ConfigProto(
         gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
     ))
-
-    # Load PyTorch weights and map
     with open(parameters["tf_torch_weights_map_path"]) as f:
         tf_torch_weights_map = json.loads(f.read())
-    torch_weights = torch.load(parameters["initial_parameters"])
 
-    with graph.as_default():
-        with sess.as_default():
-            with tf.device(device_str):
-                K.set_session(sess)
-                x = tf.placeholder(tf.float32, [None, 256, 256, 3])
-                model = DenseNet121(weights=None, input_shape=(256, 256, 3), classes=4)
-                y = model(x)
-
-            match_dict = construct_densenet_match_dict(
-                tf_variables=tf_utils.get_tf_variables(graph, batch_norm_key="batch_normalization"),
-                torch_weights=torch_weights,
-                tf_torch_weights_map=tf_torch_weights_map
-            )
-            sess.run(tf_utils.construct_weight_assign_ops(match_dict))
+    with sess.as_default():
+        torch_weights = torch.load(parameters["initial_parameters"])
+        match_dict = construct_densenet_match_dict(
+            tf_variables=tf_utils.get_tf_variables(graph, batch_norm_key="BatchNorm"),
+            torch_weights=torch_weights,
+            tf_torch_weights_map=tf_torch_weights_map
+        )
+        sess.run(tf_utils.construct_weight_assign_ops(match_dict))
 
     return sess, x, y
 

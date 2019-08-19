@@ -78,6 +78,7 @@ def load_model(parameters):
             tf_torch_weights_map=tf_torch_weights_map,
         )
         sess.run(tf_utils.construct_weight_assign_ops(match_dict))
+
     return sess, x, y
 
 

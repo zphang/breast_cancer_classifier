@@ -29,7 +29,7 @@ python3 src/optimal_centers/get_optimal_center_single.py \
     --metadata-path ${SAMPLE_SINGLE_OUTPUT_PATH}/cropped_metadata.pkl
 
 echo 'Stage 3: Generate Heatmaps'
-python3 src/heatmaps/run_producer_single.py \
+python3 src/heatmaps/run_producer_single_tf.py \
     --model-path ${PATCH_MODEL_PATH} \
     --cropped-mammogram-path ${SAMPLE_SINGLE_OUTPUT_PATH}/cropped.png \
     --metadata-path ${SAMPLE_SINGLE_OUTPUT_PATH}/cropped_metadata.pkl \
