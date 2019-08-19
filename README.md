@@ -94,7 +94,9 @@ Stage 4b: Run Classifier (Image+Heatmaps)
 
 #### Image-level (TensorFlow)
 
-We have ported our *image-wise* model to TensorFlow to facilitate use by other teams. The outputs should be nearly identical to those of the PyTorch model. Using `run_single_tf.sh`, which simply swaps the final model script to use the TensorFlow version, you should get the following output:
+We have ported our models to TensorFlow to facilitate use by other teams. The cancer classification model has been ported entirely to TensorFlow within this repository, while the patch classification model requires DenseNet code from [here](https://github.com/pudae/tensorflow-densenet). Simply git clone the linked repository and place a path to it in your `PYTHONPATH`. The cancer classification models and patch classification models are also independent, so you can use e.g. the PyTorch-generated heatmaps with the TensorFlow classifier. 
+
+The outputs should be nearly identical to those of the PyTorch model. Using `run_single_tf.sh`, you should get the following output:
 
 ```bash
 bash run_single_tf.sh "sample_data/images/0_L_CC.png" "L-CC"
